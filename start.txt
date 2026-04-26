@@ -3,12 +3,12 @@
 Start the Backend:
 
 bash
-cd d:\Anu\dtm\SheCircle\ChoresApp\backend
+cd d:\Anu\dtm\HomeSync\backend
 .\mvnw spring-boot:run
 Runs on http://localhost:8080
 
 Start the Frontend:
 
 bash
-cd d:\Anu\dtm\SheCircle\ChoresApp\frontend
+cd d:\Anu\dtm\HomeSync\frontend
 npm run dev
