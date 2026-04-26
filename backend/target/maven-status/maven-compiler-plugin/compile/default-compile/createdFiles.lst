@@ -1,0 +1,14 @@
+com\chores\backend\controller\AuthController.class
+com\chores\backend\controller\TaskController.class
+com\chores\backend\model\User.class
+com\chores\backend\BackendApplication.class
+com\chores\backend\controller\AiController.class
+com\chores\backend\controller\ReminderController.class
+com\chores\backend\service\TaskService.class
+com\chores\backend\service\AuthService.class
+com\chores\backend\service\AiChatService.class
+com\chores\backend\model\TaskStatus.class
+com\chores\backend\service\JsonDatabaseService.class
+com\chores\backend\model\Household.class
+com\chores\backend\model\DatabaseRoot.class
+com\chores\backend\model\Task.class

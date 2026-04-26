@@ -1,0 +1,101 @@
+{
+  "households" : [ {
+    "id" : "62feb633-bb55-4c78-b313-d192b9e6dfc1",
+    "name" : "Abhi house",
+    "inviteCode" : "8f9b084a"
+  }, {
+    "id" : "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8",
+    "name" : "Abhishek house",
+    "inviteCode" : "8f8683fe"
+  }, {
+    "id" : "dac0a41e-5585-489e-9ce9-a1b582fa3660",
+    "name" : "Abhi house",
+    "inviteCode" : "9306b607"
+  }, {
+    "id" : "0f36d9e0-a306-4aff-9a82-ad725c7180b5",
+    "name" : "new house",
+    "inviteCode" : "37940d35"
+  }, {
+    "id" : "19239a31-0d12-4e8c-9957-775cb3154f10",
+    "name" : "New one",
+    "inviteCode" : "583132c2"
+  }, {
+    "id" : "68ec18a1-3dd0-41f1-b8a5-c2b75e8c0985",
+    "name" : "Hostel",
+    "inviteCode" : "0e47fc8d"
+  }, {
+    "id" : "a99e07a9-3b28-4ed6-892b-a0bd50c5053a",
+    "name" : "hostel srm",
+    "inviteCode" : "97cd469b"
+  } ],
+  "users" : [ {
+    "id" : "7a7c052c-f78d-479c-9d7b-3a03e4a56e67",
+    "username" : "Abhishek",
+    "password" : "Nothing1",
+    "householdIds" : [ "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8" ]
+  }, {
+    "id" : "957dccca-2618-41a9-bc82-d6da868d1b5b",
+    "username" : "Anu",
+    "password" : "Nothing2",
+    "householdIds" : [ "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8" ]
+  }, {
+    "id" : "0abad3cc-1d35-4277-95da-cf568a6e5542",
+    "username" : "Bhavani",
+    "password" : "Welcome",
+    "householdIds" : [ "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8", "68ec18a1-3dd0-41f1-b8a5-c2b75e8c0985" ]
+  }, {
+    "id" : "1352888f-ab2c-4c2d-aca5-7c804284a791",
+    "username" : "Mahen",
+    "password" : "nothing3",
+    "householdIds" : [ "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8" ]
+  } ],
+  "tasks" : [ {
+    "id" : "08a628da-c2d7-460b-a68f-070fec1c06e3",
+    "title" : "Laundry task",
+    "description" : "Wash the clothes, dry the clothes and fold the clothes",
+    "assigneeId" : "0abad3cc-1d35-4277-95da-cf568a6e5542",
+    "householdId" : "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8",
+    "status" : "COMPLETED",
+    "deadline" : "2026-04-27",
+    "severity" : "LOW",
+    "recurrenceFrequency" : "WEEKLY",
+    "lastRecurrenceDate" : null,
+    "recurring" : false
+  }, {
+    "id" : "40ca1c5b-a9cb-447f-889e-02f29f98787e",
+    "title" : "Cook Dinner",
+    "description" : "chop veggies, make roti and make side dish",
+    "assigneeId" : "7a7c052c-f78d-479c-9d7b-3a03e4a56e67",
+    "householdId" : "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8",
+    "status" : "OPEN",
+    "deadline" : "2026-04-26",
+    "severity" : "HIGH",
+    "recurrenceFrequency" : "DAILY",
+    "lastRecurrenceDate" : null,
+    "recurring" : false
+  }, {
+    "id" : "b726e495-8d28-40ed-b968-478c718194d3",
+    "title" : "Make breakfast",
+    "description" : "",
+    "assigneeId" : "957dccca-2618-41a9-bc82-d6da868d1b5b",
+    "householdId" : "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8",
+    "status" : "OPEN",
+    "deadline" : "",
+    "severity" : "LOW",
+    "recurrenceFrequency" : "DAILY",
+    "lastRecurrenceDate" : null,
+    "recurring" : false
+  }, {
+    "id" : "7ee1821e-3706-42a6-8c1f-ca337863775d",
+    "title" : "packing bags",
+    "description" : "out of station",
+    "assigneeId" : null,
+    "householdId" : "61d6bb5e-14ce-447a-bdbb-d68425c0a2b8",
+    "status" : "OPEN",
+    "deadline" : "2026-04-26",
+    "severity" : "HIGH",
+    "recurrenceFrequency" : "DAILY",
+    "lastRecurrenceDate" : null,
+    "recurring" : false
+  } ]
+}

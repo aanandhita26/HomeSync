@@ -1,0 +1,14 @@
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\BackendApplication.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\controller\AiController.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\controller\AuthController.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\controller\ReminderController.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\controller\TaskController.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\model\DatabaseRoot.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\model\Household.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\model\Task.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\model\TaskStatus.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\model\User.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\service\AiChatService.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\service\AuthService.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\service\JsonDatabaseService.java
+D:\Anu\dtm\SheCircle\ChoresApp\backend\src\main\java\com\chores\backend\service\TaskService.java
