@@ -1,0 +1,14 @@
+
+
+Start the Backend:
+
+bash
+cd d:\Anu\dtm\SheCircle\ChoresApp\backend
+.\mvnw spring-boot:run
+Runs on http://localhost:8080
+
+Start the Frontend:
+
+bash
+cd d:\Anu\dtm\SheCircle\ChoresApp\frontend
+npm run dev
