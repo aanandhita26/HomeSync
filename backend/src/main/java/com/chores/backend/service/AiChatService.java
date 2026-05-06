@@ -53,4 +53,29 @@ public class AiChatService {
         
         return subTasks;
     }
+
+    public int calculateDifficulty(String title) {
+        if (title == null || title.isEmpty()) return 1;
+        String t = title.toLowerCase();
+        
+        // High difficulty (Heavy, complex, or long duration)
+        if (t.contains("deep clean") || t.contains("oven") || t.contains("repair") || t.contains("assemble") || t.contains("mow")) return 8;
+        if (t.contains("cook") || t.contains("dinner") || t.contains("grocery") || t.contains("vacuum")) return 5;
+        if (t.contains("trash") || t.contains("dust") || t.contains("water") || t.contains("dishes")) return 2;
+        
+        return 4; // Default medium-low
+    }
+
+    public String categorizeTask(String title) {
+        if (title == null || title.isEmpty()) return "General";
+        String t = title.toLowerCase();
+        
+        if (t.contains("cook") || t.contains("dinner") || t.contains("breakfast") || t.contains("lunch") || t.contains("meal")) return "Cooking";
+        if (t.contains("clean") || t.contains("wash") || t.contains("mop") || t.contains("vacuum") || t.contains("dust") || t.contains("dishes")) return "Cleaning";
+        if (t.contains("fix") || t.contains("repair") || t.contains("assemble") || t.contains("technical")) return "Maintenance";
+        if (t.contains("grocery") || t.contains("buy") || t.contains("shop") || t.contains("bill")) return "Errands";
+        if (t.contains("trash") || t.contains("garden") || t.contains("water") || t.contains("pet")) return "Outdoor/General";
+        
+        return "General";
+    }
 }

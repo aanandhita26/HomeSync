@@ -30,7 +30,13 @@ public class TaskController {
 
     @PatchMapping("/{taskId}/status")
     public Task updateStatus(@PathVariable("taskId") String taskId, @RequestBody Map<String, String> body) {
-        return taskService.updateTaskStatus(taskId, TaskStatus.valueOf(body.get("status")));
+        String completedById = body.get("completedById");
+        return taskService.updateTaskStatus(taskId, TaskStatus.valueOf(body.get("status")), completedById);
+    }
+
+    @GetMapping("/household/{hhId}/leaderboard")
+    public List<Map<String, Object>> getLeaderboard(@PathVariable("hhId") String hhId) {
+        return taskService.getLeaderboard(hhId);
     }
 
     @PatchMapping("/{taskId}/assign")
@@ -41,6 +47,16 @@ public class TaskController {
     @PatchMapping("/{taskId}/stop-recurrence")
     public Task stopRecurrence(@PathVariable("taskId") String taskId) {
         return taskService.stopRecurrence(taskId);
+    }
+
+    @PatchMapping("/{taskId}/veto")
+    public Task vetoTask(@PathVariable("taskId") String taskId, @RequestBody Map<String, String> body) {
+        return taskService.vetoTask(taskId, body.get("userId"));
+    }
+
+    @PostMapping("/user/{userId}/clear-preferences")
+    public void clearPreferences(@PathVariable("userId") String userId) {
+        taskService.clearAvoidCategories(userId);
     }
 
     @DeleteMapping("/{taskId}")

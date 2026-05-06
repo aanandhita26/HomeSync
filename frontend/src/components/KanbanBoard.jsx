@@ -12,7 +12,7 @@ export default function KanbanBoard({ tasks, fetchTasks, user, baseUrl, members 
       await fetch(`${baseUrl}/tasks/${taskId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus, completedById: newStatus === 'COMPLETED' ? user.id : null })
       });
       fetchTasks();
     } catch(e) {
@@ -32,6 +32,25 @@ export default function KanbanBoard({ tasks, fetchTasks, user, baseUrl, members 
     } catch(e) {
       console.error("Assignment failed", e);
     }
+  };
+
+  const vetoTask = async (taskId) => {
+    try {
+      await fetch(`${baseUrl}/tasks/${taskId}/veto`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id })
+      });
+      if (fetchTasks) fetchTasks();
+    } catch(e) { console.error(e); }
+  };
+
+  const clearPreferences = async () => {
+    try {
+      await fetch(`${baseUrl}/tasks/user/${user.id}/clear-preferences`, { method: 'POST' });
+      alert("AI Preferences reset! I will now suggest all types of tasks to you again.");
+      fetchTasks();
+    } catch(e) { console.error(e); }
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -62,6 +81,10 @@ export default function KanbanBoard({ tasks, fetchTasks, user, baseUrl, members 
             {STATUS_COLUMNS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>
         </div>
+        <div style={{ flex: 1 }} />
+        <button className="btn-outline" style={{ fontSize: '0.8rem', opacity: 0.7 }} onClick={clearPreferences}>
+          Reset AI Preferences
+        </button>
         {(assigneeFilter !== 'ALL' || statusFilter !== 'ALL') && (
           <button className="btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem', color: 'var(--primary)' }} onClick={() => { setAssigneeFilter('ALL'); setStatusFilter('ALL'); }}>
             Reset Filters
@@ -87,15 +110,28 @@ export default function KanbanBoard({ tasks, fetchTasks, user, baseUrl, members 
                 )}
                 {colTasks.map(task => (
                   <div key={task.id} className="glass-panel animate-fade-in" style={{ padding: '16px', background: 'white', borderTop: `4px solid ${status === 'OPEN' ? 'var(--status-open)' : (status === 'IN_PROGRESS' || status === 'DELAYED' ? 'var(--status-in)' : 'var(--status-completed)')}` }}>
-                    <h4 style={{ marginBottom: '8px' }}>{task.title}</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <h4 style={{ marginBottom: '8px' }}>{task.title}</h4>
+                      {task.difficulty > 0 && (
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: task.difficulty > 6 ? '#fee2e2' : '#f1f5f9', color: task.difficulty > 6 ? '#ef4444' : '#64748b' }}>
+                          {task.difficulty > 6 ? '🔥' : '💧'} {task.difficulty}
+                        </span>
+                      )}
+                    </div>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '12px' }}>{task.description}</p>
                     
                     <div style={{ fontSize: '0.75rem', display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      {task.category && <span style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '4px 8px', borderRadius: '4px', color: 'var(--primary)', fontWeight: 600 }}>{task.category}</span>}
                       <span style={{ background: 'rgba(0,0,0,0.05)', padding: '4px 8px', borderRadius: '4px', color: 'var(--text-muted)' }}>Severity: {task.severity || 'LOW'}</span>
                       {task.deadline && <span style={{ background: 'rgba(0,0,0,0.05)', padding: '4px 8px', borderRadius: '4px', color: 'var(--text-muted)' }}>Due: {task.deadline}</span>}
-                      {task.assigneeId && (
+                      {task.assigneeId && status !== 'COMPLETED' && (
                         <span style={{ background: task.assigneeId === user.id ? 'rgba(244, 63, 94, 0.1)' : 'rgba(0,0,0,0.05)', color: task.assigneeId === user.id ? 'var(--primary)' : 'var(--text-main)', padding: '4px 8px', borderRadius: '4px', fontWeight: 600 }}>
                           {members.find(m => m.id === task.assigneeId)?.username || 'Assigned'}
+                        </span>
+                      )}
+                      {status === 'COMPLETED' && task.completedById && (
+                        <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 8px', borderRadius: '4px', fontWeight: 600 }}>
+                          Completed by: {members.find(m => m.id === task.completedById)?.username || 'User'}
                         </span>
                       )}
                     </div>
@@ -108,22 +144,30 @@ export default function KanbanBoard({ tasks, fetchTasks, user, baseUrl, members 
                           </select>
                        )}
                        
-                       <div style={{ display: 'flex', gap: '4px', flex: 1, alignItems: 'center' }}>
-                          <select className="input-field" style={{ padding: '6px', margin: 0, fontSize: '0.8rem', background: '#f8fafc', flex: 1 }}
-                                  value={task.assigneeId || ''} onChange={(e) => assignToUser(task.id, e.target.value)}>
-                            <option value="">Unassigned</option>
-                            {members.map(m => (
-                              <option key={m.id} value={m.id}>
-                                {m.username} {m.id === user.id ? '(Me)' : ''}
-                              </option>
-                            ))}
-                          </select>
-                          {task.assigneeId !== user.id && (
-                            <button className="btn-outline" style={{ padding: '6px', fontSize: '0.7rem' }} onClick={() => assignToUser(task.id, user.id)}>
-                              Assign Me
-                            </button>
-                          )}
-                       </div>
+                       {status !== 'COMPLETED' && (
+                         <div style={{ display: 'flex', gap: '4px', flex: 1, alignItems: 'center' }}>
+                            <select className="input-field" style={{ padding: '6px', margin: 0, fontSize: '0.8rem', background: '#f8fafc', flex: 1 }}
+                                    value={task.assigneeId || ''} onChange={(e) => assignToUser(task.id, e.target.value)}>
+                              <option value="">Unassigned</option>
+                              {members.map(m => (
+                                <option key={m.id} value={m.id}>
+                                  {m.username} {m.id === user.id ? '(Me)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            {task.assigneeId !== user.id && (
+                              <button className="btn-outline" style={{ padding: '6px', fontSize: '0.7rem' }} onClick={() => assignToUser(task.id, user.id)}>
+                                Assign Me
+                              </button>
+                            )}
+                            {task.assigneeId === user.id && (
+                              <button className="btn-outline" style={{ padding: '6px', fontSize: '0.7rem', color: '#f59e0b', borderColor: '#f59e0b' }} 
+                                      onClick={() => vetoTask(task.id)}>
+                                Not for me
+                              </button>
+                            )}
+                         </div>
+                       )}
 
                        <button className="btn-outline" 
                                style={{ padding: '8px', border: 'none', color: '#ef4444', display: 'flex', alignItems: 'center', cursor: 'pointer' }}

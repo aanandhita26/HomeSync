@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { LogOut, LayoutDashboard, CheckSquare, Bell, Copy, Plus, Users, Home, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { LogOut, LayoutDashboard, CheckSquare, Bell, Copy, Plus, Users, Home, X, CheckCircle, AlertCircle, Trophy, Box } from 'lucide-react';
 import KanbanBoard from '../components/KanbanBoard.jsx';
 import TaskCreator from '../components/TaskCreator.jsx';
+import Leaderboard from '../components/Leaderboard.jsx';
+import Inventory from '../components/Inventory.jsx';
 import CustomAlert from '../components/CustomAlert.jsx';
 import CustomModal from '../components/CustomModal.jsx';
 
@@ -14,6 +16,8 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
   const [joinCode, setJoinCode] = useState('');
   const [notify, setNotify] = useState(null);
   const [modal, setModal] = useState(null); // { title, message, onConfirm }
+  const [newRecTile, setNewRecTitle] = useState('');
+  const [newRecFreq, setNewRecFreq] = useState('DAILY');
 
   const baseUrl = 'http://localhost:8080/api';
 
@@ -135,7 +139,7 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
   const handleLeaveHousehold = async () => {
     const activeH = households.find(h => h.id === activeHouseholdId);
     if (!activeH) return;
-    
+
     setModal({
       title: "Leave Household",
       message: `Are you sure you want to leave ${activeH.name}? You will need an invite code to join back.`,
@@ -163,6 +167,30 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
   const activeHousehold = Array.isArray(households) ? households.find(h => h.id === activeHouseholdId) : null;
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  const handleCreateRecurring = async (e) => {
+    e.preventDefault();
+    if (!newRecTile.trim()) return;
+    try {
+      await fetch(`${baseUrl}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newRecTile,
+          recurring: true,
+          recurrenceFrequency: newRecFreq,
+          householdId: activeHouseholdId,
+          status: 'OPEN',
+          severity: 'MEDIUM'
+        })
+      });
+      setNewRecTitle('');
+      fetchTasks();
+      showToast("Recurring chore added!", 'success');
+    } catch (e) {
+      showToast("Failed to add recurring chore", "error");
+    }
+  };
 
   const stopRecurrence = async (taskId) => {
     try {
@@ -285,6 +313,12 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
         <button className={activeTab === 'recurring' ? 'btn-primary' : 'btn-outline'} onClick={() => setActiveTab('recurring')} disabled={!activeHouseholdId}>
           <CheckSquare size={18} /> Recurring Tasks
         </button>
+        <button className={activeTab === 'leaderboard' ? 'btn-primary' : 'btn-outline'} onClick={() => setActiveTab('leaderboard')} disabled={!activeHouseholdId}>
+          <Trophy size={18} /> Leaderboard
+        </button>
+        <button className={activeTab === 'inventory' ? 'btn-primary' : 'btn-outline'} onClick={() => setActiveTab('inventory')} disabled={!activeHouseholdId}>
+          <Box size={18} /> Inventory
+        </button>
       </div>
 
       <main className="animate-fade-in">
@@ -318,10 +352,26 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
         {activeTab === 'recurring' && activeHouseholdId && (
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h3 style={{ marginBottom: '24px' }}>Recurring Chores Management</h3>
+            <form onSubmit={handleCreateRecurring} className="glass-panel" style={{ padding: '16px', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'rgba(255,255,255,0.05)' }}>
+              <div style={{ flex: 2 }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Chore Title</label>
+                <input className="input-field" placeholder="e.g. Water Plants" value={newRecTile} onChange={e => setNewRecTitle(e.target.value)} style={{ margin: 0 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Frequency</label>
+                <select className="input-field" value={newRecFreq} onChange={e => setNewRecFreq(e.target.value)} style={{ margin: 0 }}>
+                  <option value="DAILY">Daily</option>
+                  <option value="WEEKLY">Weekly</option>
+                  <option value="MONTHLY">Monthly</option>
+                </select>
+              </div>
+              <button type="submit" className="btn-primary" style={{ padding: '12px 24px' }}>Add Chore</button>
+            </form>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {tasks.filter(t => t.recurring).length === 0 && <p style={{ color: 'var(--text-muted)' }}>No recurring tasks configured.</p>}
               {tasks.filter(t => t.recurring).map(task => (
-                <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                <div key={task.id} className="glass-panel recurring-card animate-fade-in" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                   <div>
                     <h4 style={{ marginBottom: '4px' }}>{task.title}</h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Frequency: <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{task.recurrenceFrequency}</span></p>
@@ -333,6 +383,12 @@ export default function Dashboard({ user, setUser, activeHouseholdId, setActiveH
               ))}
             </div>
           </div>
+        )}
+        {activeTab === 'leaderboard' && activeHouseholdId && (
+          <Leaderboard activeHouseholdId={activeHouseholdId} baseUrl={baseUrl} />
+        )}
+        {activeTab === 'inventory' && activeHouseholdId && (
+          <Inventory activeHouseholdId={activeHouseholdId} baseUrl={baseUrl} user={user} showToast={showToast} />
         )}
       </main>
     </div>

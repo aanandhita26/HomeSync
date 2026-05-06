@@ -12,6 +12,10 @@ public class Task {
     private boolean isRecurring;
     private String recurrenceFrequency; // DAILY, WEEKLY, MONTHLY
     private String lastRecurrenceDate; // YYYY-MM-DD
+    private String completedById;
+    private String completedAt;
+    private int difficulty; // 1-10 scale
+    private String category; // e.g. Cleaning, Cooking, Maintenance
 
     public Task() {}
 
@@ -38,4 +42,12 @@ public class Task {
     public void setRecurrenceFrequency(String recurrenceFrequency) { this.recurrenceFrequency = recurrenceFrequency; }
     public String getLastRecurrenceDate() { return lastRecurrenceDate; }
     public void setLastRecurrenceDate(String lastRecurrenceDate) { this.lastRecurrenceDate = lastRecurrenceDate; }
+    public String getCompletedById() { return completedById; }
+    public void setCompletedById(String completedById) { this.completedById = completedById; }
+    public String getCompletedAt() { return completedAt; }
+    public void setCompletedAt(String completedAt) { this.completedAt = completedAt; }
+    public int getDifficulty() { return difficulty; }
+    public void setDifficulty(int difficulty) { this.difficulty = difficulty; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 }
