@@ -2,8 +2,12 @@ package com.chores.backend.service;
 
 import com.chores.backend.model.Task;
 import com.chores.backend.model.TaskStatus;
-import org.springframework.stereotype.Service;
+import com.chores.backend.model.User;
+import com.chores.backend.repository.TaskRepository;
+import com.chores.backend.repository.UserRepository;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,15 +15,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import com.chores.backend.model.User;
 
 @Service
 public class TaskService {
-    private final JsonDatabaseService db;
+    private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
     private final AiChatService aiService;
 
-    public TaskService(JsonDatabaseService db, AiChatService aiService) {
-        this.db = db;
+    public TaskService(TaskRepository taskRepository, UserRepository userRepository, AiChatService aiService) {
+        this.taskRepository = taskRepository;
+        this.userRepository = userRepository;
         this.aiService = aiService;
     }
 
@@ -27,8 +32,9 @@ public class TaskService {
     public void processRecurringTasks() {
         LocalDate today = LocalDate.now();
         List<Task> newTasks = new ArrayList<>();
+        List<Task> tasksToUpdate = new ArrayList<>();
         
-        for (Task task : db.getDatabase().getTasks()) {
+        for (Task task : taskRepository.findAll()) {
             if (task.isRecurring() && task.getRecurrenceFrequency() != null) {
                 String lastDateStr = task.getLastRecurrenceDate();
                 LocalDate lastDate = (lastDateStr == null) ? LocalDate.MIN : LocalDate.parse(lastDateStr);
@@ -56,20 +62,22 @@ public class TaskService {
                     nextTask.setStatus(TaskStatus.OPEN);
                     nextTask.setDeadline(today.toString());
                     
-                    // AI Metadata for recurring tasks
                     nextTask.setDifficulty(aiService.calculateDifficulty(nextTask.getTitle()));
                     nextTask.setCategory(aiService.categorizeTask(nextTask.getTitle()));
                     autoAssignTask(nextTask);
 
                     newTasks.add(nextTask);
                     task.setLastRecurrenceDate(today.toString());
+                    tasksToUpdate.add(task);
                 }
             }
         }
         
         if (!newTasks.isEmpty()) {
-            db.getDatabase().getTasks().addAll(newTasks);
-            db.save();
+            taskRepository.saveAll(newTasks);
+        }
+        if (!tasksToUpdate.isEmpty()) {
+            taskRepository.saveAll(tasksToUpdate);
         }
     }
 
@@ -80,7 +88,6 @@ public class TaskService {
             task.setLastRecurrenceDate(LocalDate.now().toString());
         }
 
-        // AI Intelligence Layer
         if (task.getDifficulty() <= 0) {
             task.setDifficulty(aiService.calculateDifficulty(task.getTitle()));
         }
@@ -88,46 +95,42 @@ public class TaskService {
             task.setCategory(aiService.categorizeTask(task.getTitle()));
         }
 
-        // Autonomous Assignment Logic
         if (task.getAssigneeId() == null || task.getAssigneeId().isEmpty()) {
             autoAssignTask(task);
         }
 
-        db.getDatabase().getTasks().add(task);
-        db.save();
-        return task;
+        return taskRepository.save(task);
     }
 
     private void autoAssignTask(Task task) {
-        List<User> householdUsers = db.getDatabase().getUsers().stream()
+        // Query by householdId in mongo
+        List<User> householdUsers = userRepository.findAll().stream()
                 .filter(u -> u.getHouseholdIds().contains(task.getHouseholdId()))
                 .collect(Collectors.toList());
 
         if (householdUsers.isEmpty()) return;
 
-        // Calculate weekly workload for each user
         Map<String, Integer> workloadMap = new HashMap<>();
+        List<Task> allTasks = taskRepository.findAll();
+        
         for (User user : householdUsers) {
-            // Check if user has vetoed this category
             if (user.getAvoidCategories() != null && user.getAvoidCategories().contains(task.getCategory())) {
-                workloadMap.put(user.getId(), Integer.MAX_VALUE); // Avoid this user
+                workloadMap.put(user.getId(), Integer.MAX_VALUE);
                 continue;
             }
 
-            int weeklyPoints = db.getDatabase().getTasks().stream()
+            int weeklyPoints = allTasks.stream()
                     .filter(t -> user.getId().equals(t.getAssigneeId()))
                     .mapToInt(Task::getDifficulty)
                     .sum();
             workloadMap.put(user.getId(), weeklyPoints);
         }
 
-        // Find user with minimum points
         String bestUser = workloadMap.entrySet().stream()
                 .min(Map.Entry.comparingByValue())
                 .map(Map.Entry::getKey)
                 .orElse(householdUsers.get(0).getId());
 
-        // If everyone is vetoed, just pick the first person to avoid failure
         if (workloadMap.get(bestUser) == Integer.MAX_VALUE) {
             bestUser = householdUsers.get(0).getId();
         }
@@ -136,25 +139,18 @@ public class TaskService {
     }
 
     public Task stopRecurrence(String taskId) {
-        Task task = db.getDatabase().getTasks().stream()
-                .filter(t -> t.getId().equals(taskId))
-                .findFirst()
+        Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         task.setRecurring(false);
-        db.save();
-        return task;
+        return taskRepository.save(task);
     }
 
     public List<Task> getTasksByHousehold(String householdId) {
-        return db.getDatabase().getTasks().stream()
-                .filter(t -> t.getHouseholdId().equals(householdId))
-                .collect(Collectors.toList());
+        return taskRepository.findByHouseholdId(householdId);
     }
 
     public Task updateTaskStatus(String taskId, TaskStatus status, String completedById) {
-        Task task = db.getDatabase().getTasks().stream()
-                .filter(t -> t.getId().equals(taskId))
-                .findFirst()
+        Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         task.setStatus(status);
         if (status == TaskStatus.COMPLETED) {
@@ -164,15 +160,15 @@ public class TaskService {
             task.setCompletedById(null);
             task.setCompletedAt(null);
         }
-        db.save();
-        return task;
+        return taskRepository.save(task);
     }
 
     public List<Map<String, Object>> getLeaderboard(String householdId) {
         Map<String, Integer> pointsMap = new HashMap<>();
+        List<Task> householdTasks = taskRepository.findByHouseholdId(householdId);
         
-        for (Task task : db.getDatabase().getTasks()) {
-            if (task.getHouseholdId().equals(householdId) && task.getStatus() == TaskStatus.COMPLETED && task.getCompletedById() != null) {
+        for (Task task : householdTasks) {
+            if (task.getStatus() == TaskStatus.COMPLETED && task.getCompletedById() != null) {
                 int points = task.getDifficulty() > 0 ? task.getDifficulty() * 10 : 10;
                 pointsMap.put(task.getCompletedById(), pointsMap.getOrDefault(task.getCompletedById(), 0) + points);
             }
@@ -181,7 +177,7 @@ public class TaskService {
         List<Map<String, Object>> leaderboard = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : pointsMap.entrySet()) {
             String userId = entry.getKey();
-            User user = db.getDatabase().getUsers().stream().filter(u -> u.getId().equals(userId)).findFirst().orElse(null);
+            User user = userRepository.findById(userId).orElse(null);
             if (user != null) {
                 Map<String, Object> userPoints = new HashMap<>();
                 userPoints.put("userId", userId);
@@ -191,57 +187,51 @@ public class TaskService {
             }
         }
 
-        // Sort by points descending
         leaderboard.sort((m1, m2) -> ((Integer) m2.get("points")).compareTo((Integer) m1.get("points")));
         return leaderboard;
     }
 
     public Task assignTask(String taskId, String assigneeId) {
-        Task task = db.getDatabase().getTasks().stream()
-                .filter(t -> t.getId().equals(taskId))
-                .findFirst()
+        Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         task.setAssigneeId(assigneeId);
-        db.save();
-        return task;
+        return taskRepository.save(task);
     }
 
     public void deleteTask(String taskId) {
-        db.getDatabase().getTasks().removeIf(t -> t.getId().equals(taskId));
-        db.save();
+        taskRepository.deleteById(taskId);
     }
 
     public Task vetoTask(String taskId, String userId) {
-        Task task = db.getDatabase().getTasks().stream()
-                .filter(t -> t.getId().equals(taskId))
-                .findFirst()
+        Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         
-        User user = db.getDatabase().getUsers().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst()
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Add to avoid categories
         if (!user.getAvoidCategories().contains(task.getCategory())) {
             user.getAvoidCategories().add(task.getCategory());
+            userRepository.save(user);
         }
 
-        // Re-assign task
         task.setAssigneeId(null);
         autoAssignTask(task);
-        
-        db.save();
-        return task;
+        return taskRepository.save(task);
     }
 
     public void clearAvoidCategories(String userId) {
-        User user = db.getDatabase().getUsers().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst()
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         user.getAvoidCategories().clear();
-        db.save();
+        userRepository.save(user);
+    }
+
+    public List<Task> getReminders(String userId) {
+        return taskRepository.findAll().stream()
+                .filter(t -> userId.equals(t.getAssigneeId()))
+                .filter(t -> t.getStatus() != TaskStatus.COMPLETED)
+                .filter(t -> "HIGH".equalsIgnoreCase(t.getSeverity()) || TaskStatus.DELAYED == t.getStatus())
+                .collect(Collectors.toList());
     }
 }

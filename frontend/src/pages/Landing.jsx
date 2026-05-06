@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Sparkles, Users, Key } from 'lucide-react';
 import CustomAlert from '../components/CustomAlert.jsx';
 
+import API_BASE_URL from '../api.js';
+
 export default function Landing({ setUser }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [username, setUsername] = useState('');
@@ -10,7 +12,7 @@ export default function Landing({ setUser }) {
   const [inviteCode, setInviteCode] = useState('');
   const [notify, setNotify] = useState(null);
 
-  const baseUrl = 'http://localhost:8080/api';
+  const baseUrl = API_BASE_URL;
 
   const showToast = (message, type = 'info') => {
     setNotify({ message, type });

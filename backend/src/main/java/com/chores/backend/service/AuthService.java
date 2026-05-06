@@ -10,35 +10,37 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.chores.backend.repository.HouseholdRepository;
+import com.chores.backend.repository.UserRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Service
 public class AuthService {
-    private final JsonDatabaseService db;
+    private final UserRepository userRepository;
+    private final HouseholdRepository householdRepository;
 
-    public AuthService(JsonDatabaseService db) {
-        this.db = db;
+    public AuthService(UserRepository userRepository, HouseholdRepository householdRepository) {
+        this.userRepository = userRepository;
+        this.householdRepository = householdRepository;
     }
 
     public Household createHousehold(String userId, String name) {
-        System.out.println("Creating household: " + name + " for user: " + userId);
         Household h = new Household(UUID.randomUUID().toString(), name, UUID.randomUUID().toString().substring(0, 8));
-        db.getDatabase().getHouseholds().add(h);
+        householdRepository.save(h);
         
-        // Link to user if userId provided
         if (userId != null) {
-            System.out.println("Linking to user: " + userId);
-            db.getDatabase().getUsers().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst()
-                .ifPresentOrElse(
-                    u -> {
-                        u.getHouseholdIds().add(h.getId());
-                        System.out.println("Successfully linked to user");
-                    },
-                    () -> System.out.println("User NOT found in database")
-                );
+            userRepository.findById(userId).ifPresent(u -> {
+                u.getHouseholdIds().add(h.getId());
+                userRepository.save(u);
+            });
         }
         
-        db.save();
         return h;
     }
 
@@ -46,70 +48,54 @@ public class AuthService {
         List<String> householdIds = new ArrayList<>();
         
         if (inviteCode != null && !inviteCode.isEmpty()) {
-            Optional<Household> h = db.getDatabase().getHouseholds().stream()
-                    .filter(house -> house.getInviteCode().equals(inviteCode))
-                    .findFirst();
-            if (h.isEmpty()) throw new RuntimeException("Invalid invite code");
-            householdIds.add(h.get().getId());
+            Household h = householdRepository.findByInviteCode(inviteCode)
+                    .orElseThrow(() -> new RuntimeException("Invalid invite code"));
+            householdIds.add(h.getId());
         }
         
         User u = new User(UUID.randomUUID().toString(), username, password, householdIds);
-        db.getDatabase().getUsers().add(u);
-        db.save();
-        return u;
+        return userRepository.save(u);
     }
 
     public User joinHousehold(String userId, String inviteCode) {
-        Household h = db.getDatabase().getHouseholds().stream()
-                .filter(house -> house.getInviteCode().equals(inviteCode))
-                .findFirst()
+        Household h = householdRepository.findByInviteCode(inviteCode)
                 .orElseThrow(() -> new RuntimeException("Invalid invite code"));
 
-        User u = db.getDatabase().getUsers().stream()
-                .filter(user -> user.getId().equals(userId))
-                .findFirst()
+        User u = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!u.getHouseholdIds().contains(h.getId())) {
             u.getHouseholdIds().add(h.getId());
-            db.save();
+            userRepository.save(u);
         }
         return u;
     }
 
     public List<Household> getUserHouseholds(String userId) {
-        Optional<User> uOpt = db.getDatabase().getUsers().stream()
-                .filter(user -> user.getId().equals(userId))
-                .findFirst();
-        
-        if (uOpt.isEmpty()) return new ArrayList<>();
-        User u = uOpt.get();
+        User u = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return db.getDatabase().getHouseholds().stream()
-                .filter(h -> u.getHouseholdIds().contains(h.getId()))
-                .collect(Collectors.toList());
+        return (List<Household>) householdRepository.findAllById(u.getHouseholdIds());
     }
 
     public List<User> getHouseholdMembers(String householdId) {
-        return db.getDatabase().getUsers().stream()
+        // This is inefficient but works for now. Better to query by householdId in mongo.
+        return userRepository.findAll().stream()
                 .filter(u -> u.getHouseholdIds().contains(householdId))
                 .collect(Collectors.toList());
     }
 
     public User login(String username, String password) {
-        return db.getDatabase().getUsers().stream()
-                .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
-                .findFirst()
+        return userRepository.findByUsername(username)
+                .filter(u -> u.getPassword().equals(password))
                 .orElseThrow(() -> new RuntimeException("Invalid credentials"));
     }
 
     public void leaveHousehold(String userId, String householdId) {
-        User u = db.getDatabase().getUsers().stream()
-                .filter(user -> user.getId().equals(userId))
-                .findFirst()
+        User u = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         u.getHouseholdIds().remove(householdId);
-        db.save();
+        userRepository.save(u);
     }
 }
