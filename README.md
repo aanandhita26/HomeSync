@@ -1,4 +1,4 @@
-# HomeSync 🏠
+# HomeSync 
 
 ### Making household responsibilities visible, shared, and fair.
 
